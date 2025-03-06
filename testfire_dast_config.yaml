@@ -1,0 +1,22 @@
+auth:
+  ast_api_key: ${CX_APIKEY}  # Uses the API key from environment variables
+
+scan:
+  name: "Testfire DAST Scan"
+  description: "DAST scan for testfire.net"
+  environment_id: "e64ac486-f2e3-486e-8757-fece216af179"  # Use your actual environment ID
+  targets:
+    - url: "http://testfire.net"
+  scan_profile: "Full Scan"  # Options: "Full Scan", "Quick Scan", etc.
+  scope:
+    include_subdomains: true  # Set to true if you want to scan subdomains
+  spider:
+    max_depth: 5  # Limits how deep the scanner crawls the site
+    max_duration: 10  # Maximum crawl time in minutes
+
+report:
+  format: "JSON"  # Options: "JSON", "XML", "HTML"
+  output_path: "./output"
+
+log:
+  level: "info"
