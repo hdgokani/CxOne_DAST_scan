@@ -1,43 +1,52 @@
-name: Checkmarx DAST Scan
-
+name: CxONE DAST Scan Testfire
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch: # Adds a 'Run workflow' button in GitHub
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   dast_scan:
-    runs-on: windows-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Install Podman
-        run: |
-          choco install podman -y
-          podman machine init
-          podman machine start
-        shell: pwsh
+      - name: Create Output Folder
+        run: mkdir -p ${{ github.workspace }}/output_folder
 
-      - name: Login to Checkmarx
-        run: echo "CX_APIKEY=${{ secrets.CX_APIKEY }}" | Out-File -FilePath $env:GITHUB_ENV -Append
-        shell: pwsh
+      - name: Change Directory Owner
+        run: sudo chown -R 1000:1000 ${{ github.workspace }}
 
       - name: Run Checkmarx DAST Scan
-        run: |
-          podman run --rm `
-            -e CX_APIKEY="${{ secrets.CX_APIKEY }}" `
-            -v "${{ github.workspace }}:/workspace" `
-            checkmarx/dast:latest `
-            --config /workspace/testfire_dast_config.yaml `
-            --output /workspace/output
-        shell: pwsh
+        uses: Checkmarx/dast-github-action@v1.0.6
+        env:
+          CX_APIKEY: ${{ secrets.CX_APIKEY }}
+        with:
+          command: web
+          config: './testfire_dast.yaml'
+          log_level: info
+          base_url: "https://ast.checkmarx.net"
+          environment_id: "e64ac486-f2e3-486e-8757-fece216af179"
+          fail_on: "high"
+          verbose: true
+          output: ${{ github.workspace }}/output_folder
+
+      - name: Reclaim Output Directory
+        if: always()
+        run: sudo chown -R 1001:1001 ${{ github.workspace }}/output_folder
 
       - name: Upload Scan Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
+        if: always()
         with:
-          name: dast-report
-          path: ./output
+          name: testfire-dast-report
+          path: ${{ github.workspace }}/output_folder
