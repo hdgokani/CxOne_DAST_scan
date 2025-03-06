@@ -1,22 +1,188 @@
-auth:
-  ast_api_key: ${CX_APIKEY}  # Uses the API key from environment variables
+# ---
+# env:
+#   contexts:
+#     - name: "TestfireContext"
+#       urls:
+#         - "http://testfire.net"
+#       includePaths:
+#         - "http://testfire.net/*"
+#       excludePaths: []
+#       authentication:
+#         method: "form"
+#         parameters:
+#           loginPageUrl: "http://testfire.net/login.jsp"
+#           loginRequestUrl: "http://testfire.net/login.jsp"
+#           loginRequestBody: "uid={%username%}&passw={%password%}"
+#         verification:
+#           method: "poll"
+#           loggedInRegex: "Log Out"
+#           loggedOutRegex: "Log In"
+#           pollFrequency: 60
+#           pollUnits: "requests"
+#           pollUrl: "http://testfire.net/myaccount.jsp"
+#           pollPostData: ""
+#       sessionManagement:
+#         method: "cookie"
+#         parameters: {}
+#       technology:
+#         exclude: []
+#       users:
+#         - name: "admin"
+#           credentials:
+#             password: "admin123"
+#             username: "admin"
+#   parameters:
+#     failOnError: true
+#     failOnWarning: false
+#     progressToStdout: true
+#   vars: {}
+# jobs:
+#   - parameters:
+#       maxAlertsPerRule: 0
+#       scanOnlyInScope: true
+#       maxBodySizeInBytesToScan: 0
+#       enableTags: false
+#     rules: []
+#     name: "passiveScan-config"
+#     type: "passiveScan-config"
+#   - parameters:
+#       context: "TestfireContext"
+#       user: "admin"
+#       url: "http://testfire.net/"
+#       maxDuration: 10
+#       maxDepth: 0
+#       maxChildren: 0
+#       acceptCookies: false
+#       handleODataParametersVisited: false
+#       handleParameters: "IGNORE_COMPLETELY"
+#       maxParseSizeBytes: 0
+#       parseComments: false
+#       parseGit: false
+#       parseRobotsTxt: false
+#       parseSitemapXml: false
+#       parseSVNEntries: false
+#       postForm: false
+#       processForm: false
+#       requestWaitTime: 0
+#       sendRefererHeader: false
+#       userAgent: ""
+#     name: "spider"
+#     type: "spider"
+#   - parameters:
+#       context: "TestfireContext"
+#       user: "admin"
+#       url: "http://testfire.net/"
+#       maxDuration: 60
+#       maxCrawlDepth: 10
+#       numberOfBrowsers: 16
+#       runOnlyIfModern: false
+#     name: "spiderAjax"
+#     type: "spiderAjax"
+#   - parameters: {}
+#     name: "passiveScan-wait"
+#     type: "passiveScan-wait"
+#   - parameters:
+#       context: "TestfireContext"
+#       user: "admin"
+#       policy: ""
+#       maxRuleDurationInMins: 0
+#       maxScanDurationInMins: 0
+#       addQueryParam: false
+#       delayInMs: 0
+#       handleAntiCSRFTokens: false
+#       injectPluginIdInHeader: false
+#       scanHeadersAllRequests: false
+#       threadPerHost: 5
+#     policyDefinition:
+#       defaultStrength: "medium"
+#       defaultThreshold: "medium"
+#       rules: []
+#     name: "activeScan"
+#     type: "activeScan"
+#   - parameters:
+#       template: "traditional-pdf"
+#       reportDir: ""
+#       reportTitle: "ZAP Scanning Report"
+#       reportDescription: ""
+#     name: "report-pdf"
+#     type: "report"
 
-scan:
-  name: "Testfire DAST Scan"
-  description: "DAST scan for testfire.net"
-  environment_id: "e64ac486-f2e3-486e-8757-fece216af179"  # Use your actual environment ID
-  targets:
-    - url: "http://testfire.net"
-  scan_profile: "Full Scan"  # Options: "Full Scan", "Quick Scan", etc.
-  scope:
-    include_subdomains: true  # Set to true if you want to scan subdomains
-  spider:
-    max_depth: 5  # Limits how deep the scanner crawls the site
-    max_duration: 10  # Maximum crawl time in minutes
 
-report:
-  format: "JSON"  # Options: "JSON", "XML", "HTML"
-  output_path: "./output"
-
-log:
-  level: "info"
+env:
+    contexts:
+    -
+        excludePaths: []
+        includePaths:
+        - http://testfire.net.*
+        name: Default Context
+        technology:
+            exclude: []
+        urls:
+        - http://testfire.net/
+        authentication:
+            method: json
+            parameters:
+                loginPageUrl: http://testfire.net/login
+                loginRequestBody: username={%username%}&password={%password%}
+                loginRequestUrl: http://testfire.net/login
+            verification:
+                method: poll
+                loggedInRegex: Sign Off
+                loggedOutRegex: Sign In
+                pollFrequency: 60
+                pollUnits: requests
+                pollUrl: http://testfire.net/login
+        sessionManagement:
+            method: cookie
+            parameters: {}
+        users:
+        -
+            credentials:
+                password: admin
+                username: admin
+            name: authentication user
+    vars: {}
+    parameters:
+        failOnError: true
+        failOnWarning: false
+        progressToStdout: true
+jobs:
+-
+    parameters:
+        scanOnlyInScope: true
+        enableTags: false
+    rules: []
+    name: passiveScan-config
+    type: passiveScan-config
+-
+    parameters:
+        context: Default Context
+        maxDuration: 0
+        maxDepth: 0
+        maxChildren: 0
+        user: authentication user
+    name: spider
+    type: spider
+-
+    parameters:
+        context: Default Context
+        maxDuration: 60
+        maxCrawlDepth: 10
+        numberOfBrowsers: 4
+        runOnlyIfModern: false
+        user: authentication user
+    name: spiderAjax
+    type: spiderAjax
+-
+    parameters: {}
+    name: passiveScan-wait
+    type: passiveScan-wait
+-
+    parameters:
+        context: Default Context
+        threadPerHost: 4
+        user: authentication user
+    policyDefinition:
+        rules: []
+    name: activeScan
+    type: activeScan
