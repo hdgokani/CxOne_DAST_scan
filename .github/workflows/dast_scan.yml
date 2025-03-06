@@ -15,22 +15,24 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Podman
+      - name: Install Podman on Windows
         run: |
-          sudo apt update
-          sudo apt install -y podman
+          choco install podman -y
+          podman machine init
+          podman machine start
 
       - name: Login to Checkmarx
-        run: echo "CX_APIKEY=${{ secrets.CX_APIKEY }}" >> $GITHUB_ENV
+        run: echo "CX_APIKEY=${{ secrets.CX_APIKEY }}" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Run Checkmarx DAST Scan
         run: |
-          podman run --rm \
-            -e CX_APIKEY="${{ secrets.CX_APIKEY }}" \
-            -v "${{ github.workspace }}:/workspace" \
-            checkmarx/dast:latest \
-            --config /workspace/testfire_dast_config.yaml \
+          podman run --rm `
+            -e CX_APIKEY="${{ secrets.CX_APIKEY }}" `
+            -v "${{ github.workspace }}:/workspace" `
+            checkmarx/dast:latest `
+            --config /workspace/testfire_dast_config.yaml `
             --output /workspace/output
+        shell: pwsh
 
       - name: Upload Scan Report
         uses: actions/upload-artifact@v4
