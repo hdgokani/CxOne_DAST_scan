@@ -1,75 +1,39 @@
-# name: Checkmarx DAST Scan
-
-# on:
-#   push:
-#     branches:
-#       - main  # Runs the scan when changes are pushed to 'main'
-#   workflow_dispatch:  # Allows manual trigger
-
-# jobs:
-#   dast_scan:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout Repository
-#         uses: actions/checkout@v3
-
-#       - name: Create Output Directory
-#         run: mkdir -p ./output && chmod 777 ./output  # Creates output folder with full permissions
-
-#       - name: Run Checkmarx DAST Scan
-#         uses: Checkmarx/dast-github-action@v1.0.6
-#         with:
-#           command: web
-#           config: ./testfire_dast_config.yaml  # Path to your config file
-#           log_level: info
-#           base_url: https://ast.checkmarx.net
-#           environment_id: e64ac486-f2e3-486e-8757-fece216af179
-#           verbose: true
-#           output: ./output
-#         env:
-#           CX_APIKEY: ${{ secrets.CX_APIKEY }}
-
-
-name: CxOne DAST Scan
+name: Checkmarx DAST Scan
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:  # Allows manual trigger
+  pull_request:
+    branches:
+      - main
 
 jobs:
   dast_scan:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set Up Environment Variables
+      - name: Install Podman
+        run: |
+          sudo apt update
+          sudo apt install -y podman
+
+      - name: Login to Checkmarx
         run: echo "CX_APIKEY=${{ secrets.CX_APIKEY }}" >> $GITHUB_ENV
 
-      - name: Run Checkmarx One DAST Scan
+      - name: Run Checkmarx DAST Scan
         run: |
-          docker run --rm \
+          podman run --rm \
             -e CX_APIKEY="${{ secrets.CX_APIKEY }}" \
-            -v "$(pwd):/app" \
-            checkmarx/dast-cli:latest \
-            dast web \
-            --environment-id="e64ac486-f2e3-486e-8757-fece216af179" \
-            --config="./testfire_dast_config.yaml" \
-            --base-url="https://ast.checkmarx.net" \
-            --output="./output" \
-            --timeout=10000 \
-            --update-interval=10 \
-            --jvm-properties="-Xmx3G" \
-            --log-level="info" \
-            --verbose \
-            --retry=3 \
-            --retry-delay=20
+            -v "${{ github.workspace }}:/workspace" \
+            checkmarx/dast:latest \
+            --config /workspace/testfire_dast_config.yaml \
+            --output /workspace/output
 
       - name: Upload Scan Report
         uses: actions/upload-artifact@v4
         with:
           name: dast-report
-          path: output/
+          path: ./output
