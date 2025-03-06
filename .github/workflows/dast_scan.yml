@@ -1,0 +1,27 @@
+name: Checkmarx DAST Scan
+
+on:
+  push:
+    branches:
+      - main  # Runs the scan when changes are pushed to 'main'
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  dast_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Run Checkmarx DAST Scan
+        uses: Checkmarx/dast-github-action@v1.0.6
+        with:
+          command: web
+          config: ./testfire_dast_config.yaml  # Path to your config file
+          log_level: info
+          base_url: https://ast.checkmarx.net
+          environment_id: e64ac486-f2e3-486e-8757-fece216af179
+          verbose: true
+          output: ./output
+        env:
+          CX_APIKEY: ${{ secrets.CX_APIKEY }}
